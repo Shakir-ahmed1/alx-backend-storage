@@ -1,7 +1,6 @@
--- galm rock
-SELECT band_name, 
-       IF(splitted = 1, 2022 - CAST(SUBSTRING_INDEX(founded, '-', 1) AS SIGNED), 
-                      2022 - CAST(founded AS SIGNED)) AS lifespan
-FROM bands
-WHERE main_style = 'Glam rock'
-ORDER BY lifespan DESC;
+-- displays bands with style of Galm rock and their lifespan
+SELECT band_name,
+       IF(split IS NULL, 2020 - formed , split - formed) AS lifespan
+FROM metal_bands
+WHERE style REGEXP "Glam rock"
+ORDER BY lifespan DESC
