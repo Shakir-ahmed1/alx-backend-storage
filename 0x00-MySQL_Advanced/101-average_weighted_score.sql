@@ -5,38 +5,28 @@ CREATE PROCEDURE ComputeAverageWeightedScoreForUsers()
 BEGIN
     DECLARE user_id_param INT;
     
+    -- Declare a cursor to iterate over user IDs
     DECLARE user_cursor CURSOR FOR
         SELECT id FROM users;
     
-    DECLARE total_weighted_score FLOAT;
-    DECLARE total_weight INT;
-    
+    -- Open the cursor
     OPEN user_cursor;
     
+    -- Start fetching user IDs
     user_loop: LOOP
+        -- Fetch the next user ID
         FETCH user_cursor INTO user_id_param;
         
+        -- Exit the loop if no more rows to fetch
         IF user_id_param IS NULL THEN
             LEAVE user_loop;
         END IF;
         
-        SELECT SUM(c.score * p.weight), SUM(p.weight)
-        INTO total_weighted_score, total_weight
-        FROM corrections c
-        JOIN projects p ON c.project_id = p.id
-        WHERE c.user_id = user_id_param;
-        
-        IF total_weight > 0 THEN
-            UPDATE users
-            SET average_score = total_weighted_score / total_weight
-            WHERE id = user_id_param;
-        ELSE
-            UPDATE users
-            SET average_score = 0
-            WHERE id = user_id_param;
-        END IF;
+        -- Call the ComputeAverageWeightedScoreForUser procedure for the current user
+        CALL ComputeAverageWeightedScoreForUser(user_id_param);
     END LOOP;
     
+    -- Close the cursor
     CLOSE user_cursor;
     
 END //
