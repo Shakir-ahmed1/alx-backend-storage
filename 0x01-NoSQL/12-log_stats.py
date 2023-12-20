@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+""" log stats for nginx """
 from pymongo import MongoClient
 
 if __name__ == "__main__":
