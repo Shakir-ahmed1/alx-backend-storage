@@ -16,21 +16,17 @@ def count_calls(method: Callable) -> Callable:
         return method(self, *args, **kwargs)
     return wrapper_function
 
+
 def call_history(method: Callable) -> Callable:
-    """ a decorator that stores the history of inputs and outputs for a function """
+    """ a decorator that stores the history of inputs and outputs """
     input_key = method.__qualname__ + ":inputs"
     output_key = method.__qualname__ + ":outputs"
-    print(input_key)
     @wraps(method)
     def wrapper_function(self: Any, *args: Any, **kwargs: Any) -> Any:
-        """ a wrapped function that stores the input and output in redis lists """
-        # store the input arguments as a string
+        """ a wrapped function that stores the input and output lists """
         self._redis.rpush(input_key, str(args))
-        # execute the original function and get the output
         output = method(self, *args, **kwargs)
-        # store the output as a string
         self._redis.rpush(output_key, output)
-        # return the output
         return output
     return wrapper_function
 
@@ -43,7 +39,7 @@ class Cache:
         self._redis.flushdb()
 
     @count_calls
-    @call_history # apply the call_history decorator to store the function
+    @call_history
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """ stores the data in Redis """
         id = str(uuid.uuid4())
@@ -69,11 +65,13 @@ class Cache:
         a = self._redis.get(key)
         return int(a)
 
+
 def replay(method):
+    """ replays history """
     rd = redis.Redis()
     qname = method.__qualname__
-    outputs = rd.lrange(qname+':outputs',0, -1)
-    inputs = rd.lrange(qname+':inputs',0, -1)
+    outputs = rd.lrange(qname+':outputs', 0, -1)
+    inputs = rd.lrange(qname+':inputs', 0, -1)
+    print(f'{qname} was called 3 times:')
     for a in zip(inputs, outputs):
-
         print(f"Cache.store(*({a[0].decode()},)) -> {a[1].decode()}")
