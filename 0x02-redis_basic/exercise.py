@@ -74,4 +74,4 @@ def replay(method):
     inputs = rd.lrange(qname+':inputs', 0, -1)
     print(f'{qname} was called {len(inputs)} times:')
     for a in zip(inputs, outputs):
-        print(f"Cache.store(*({a[0].decode()},)) -> {a[1].decode()}")
+        print(f"Cache.store(*{a[0].decode()}) -> {a[1].decode()}")
