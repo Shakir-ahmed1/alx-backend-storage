@@ -9,7 +9,6 @@ from functools import wraps
 def count_calls(method: Callable) -> Callable:
     """ a decorator that adds functionality to a functin """
     key = method.__qualname__
-
     @wraps(method)
     def wrapper_function(self: Any, *args: Any, **kwargs: Any) -> Any:
         """ a wrapped function that increments the key """
@@ -21,7 +20,7 @@ def call_history(method: Callable) -> Callable:
     """ a decorator that stores the history of inputs and outputs for a function """
     input_key = method.__qualname__ + ":inputs"
     output_key = method.__qualname__ + ":outputs"
-
+    print(input_key)
     @wraps(method)
     def wrapper_function(self: Any, *args: Any, **kwargs: Any) -> Any:
         """ a wrapped function that stores the input and output in redis lists """
@@ -69,3 +68,12 @@ class Cache:
         """ gets the desired element"""
         a = self._redis.get(key)
         return int(a)
+
+def replay(method):
+    rd = redis.Redis()
+    qname = method.__qualname__
+    outputs = rd.lrange(qname+':outputs',0, -1)
+    inputs = rd.lrange(qname+':inputs',0, -1)
+    for a in zip(inputs, outputs):
+
+        print(f"Cache.store(*({a[0].decode()},)) -> {a[1].decode()}")
