@@ -1,45 +1,37 @@
 #!/usr/bin/env python3
 """ implementation of web caching with expiry """
-import requests
 import redis
-import time
+import requests
 from functools import wraps
 
-# Initialize Redis connection
-redis_client = redis.Redis()
+r = redis.Redis()
 
-def count_calls(method):
-    @wraps(method)
-    def wrapper(*args, **kwargs):
-        url = kwargs.get('url')
-        if url:
-            key = f"count:{url}"
-            redis_client.incr(key)
-        return method(*args, **kwargs)
+
+def url_access_count(func):
+    """decorator for get_page function"""
+    @wraps(func)
+    def wrapper(url):
+        """wrapper function"""
+        key = "cached:" + url
+        cached_value = r.get(key)
+        if cached_value:
+            return cached_value.decode("utf-8")
+
+        key_count = "count:" + url
+        html_content = func(url)
+
+        r.incr(key_count)
+        r.set(key, html_content, ex=10)
+        return html_content
     return wrapper
 
-def cache_with_expiry(expiration_time):
-    def decorator(method):
-        @wraps(method)
-        def wrapper(*args, **kwargs):
-            url = kwargs.get('url')
-            if url:
-                key = f"cache:{url}"
-                cached_data = redis_client.get(key)
-                if cached_data:
-                    return cached_data.decode('utf-8')
-                else:
-                    response = method(*args, **kwargs)
-                    redis_client.setex(key, expiration_time, response)
-                    return response
-            else:
-                return method(*args, **kwargs)
-        return wrapper
-    return decorator
 
-@count_calls
-@cache_with_expiry(10)
+@url_access_count
 def get_page(url: str) -> str:
-    # Simulate slow response using slowwly.robertomurray.co.uk
-    response = requests.get(f"http://slowwly.robertomurray.co.uk/delay/5000/url/{url}")
-    return response.text
+    """ gets the page"""
+    results = requests.get(url)
+    return results.text
+
+
+if __name__ == "__main__":
+    get_page('http://slowwly.robertomurray.co.uk')
