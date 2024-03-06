@@ -12,15 +12,15 @@ def url_access_count(func):
     @wraps(func)
     def wrapper(url):
         """wrapper function"""
+        key_count = "count:" + url
+        r.incr(key_count)
         key = "cached:" + url
         cached_value = r.get(key)
         if cached_value:
             return cached_value.decode("utf-8")
 
-        key_count = "count:" + url
         html_content = func(url)
 
-        r.incr(key_count)
         r.set(key, html_content, ex=10)
         return html_content
     return wrapper
@@ -34,4 +34,5 @@ def get_page(url: str) -> str:
 
 
 if __name__ == "__main__":
-    get_page('http://slowwly.robertomurray.co.uk')
+    get_page('http://google.com')
+    get_page('http://google.com')
