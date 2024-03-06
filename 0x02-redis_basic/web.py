@@ -15,7 +15,7 @@ def url_access_count(func):
 
         key = url
         cached_value = r.get(key)
-        key_count = "count:" + url
+        key_count = "count:{" + url + "}"
         if cached_value:
             print("using chached")
             r.incr(key_count)
@@ -33,7 +33,6 @@ def get_page(url: str) -> str:
     """ gets the page"""
     results = requests.get(url)
     return results.text
-
 
 
 # if __name__ == "__main__":
