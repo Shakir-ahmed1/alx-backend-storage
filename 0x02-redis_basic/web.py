@@ -12,15 +12,17 @@ def url_access_count(func):
     @wraps(func)
     def wrapper(url):
         """wrapper function"""
-        key_count = "count:" + url
-        r.incr(key_count)
-        key = "cached:" + url
-        cached_value = r.get(key)
-        if cached_value:
-            return cached_value.decode("utf-8")
 
+        key = url
+        cached_value = r.get(key)
+        key_count = "count:" + url
+        if cached_value:
+            print("using chached")
+            r.incr(key_count)
+            return cached_value.decode("utf-8")
         html_content = func(url)
 
+        r.set(key_count, 1)
         r.set(key, html_content, ex=10)
         return html_content
     return wrapper
@@ -33,6 +35,8 @@ def get_page(url: str) -> str:
     return results.text
 
 
-if __name__ == "__main__":
-    get_page('http://google.com')
-    get_page('http://google.com')
+# if __name__ == "__main__":
+#     get_page('http://google.com')
+#     get_page('http://google.com')
+#     get_page('http://google.com')
+#     get_page('http://google.com')
