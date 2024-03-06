@@ -39,9 +39,3 @@ def cache_with_expiry(expiration_time):
 def get_page(url: str) -> str:
     response = requests.get(f"http://slowwly.robertomurray.co.uk/delay/5000/url/{url}")
     return response.text
-
-if __name__ == "__main__":
-    url = "example.com"
-    for i in range(5):
-        print(get_page(url))
-        time.sleep(2)  # Sleep for 2 seconds between each request
