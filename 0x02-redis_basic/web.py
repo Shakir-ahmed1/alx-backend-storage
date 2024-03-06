@@ -22,7 +22,7 @@ def url_access_count(func):
             return cached_value.decode("utf-8")
         html_content = func(url)
 
-        r.set(key_count, 1)
+        r.set(key_count, 1, ex=10)
         r.set(key, html_content, ex=10)
         return html_content
     return wrapper
