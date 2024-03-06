@@ -1,51 +1,47 @@
 import requests
 import redis
 import time
-from typing import Callable
+from functools import wraps
 
-redis_client = redis.Redis(host='localhost', port=6379, db=0)
+redis_client = redis.Redis()
 
-def get_page(url: str) -> str:
-    """Fetches the HTML content of a URL and caches it with expiration time of 10 seconds. """
-    cached_content = redis_client.get(url)
-    if cached_content:
-        return cached_content.decode('utf-8')
-
-    response = requests.get(url)
-    html_content = response.text
-    redis_client.setex(url, 10, html_content)
-    count_key = f"count:{url}"
-    redis_client.incr(count_key)
-
-    return html_content
-
-def cache_and_track(func: Callable) -> Callable:
-    """Decorator for caching and tracking the number of times a URL is accessed."""
-    def wrapper(url: str) -> str:
-        """Wrapper function for caching and tracking."""
-        # Check if the URL content is cached
-        cached_content = redis_client.get(url)
-        if cached_content:
-            return cached_content.decode('utf-8')
-        html_content = func(url)
-        redis_client.setex(url, 10, html_content)
-        count_key = f"count:{url}"
-        redis_client.incr(count_key)
-
-        return html_content
+def count_calls(method):
+    @wraps(method)
+    def wrapper(*args, **kwargs):
+        url = kwargs.get('url')
+        if url:
+            key = f"count:{url}"
+            redis_client.incr(key)
+        return method(*args, **kwargs)
     return wrapper
 
-@cache_and_track
-def get_page_cached(url: str) -> str:
-    """Fetches the HTML content of a URL, caching it with an expiration time of 10 seconds. """
-    response = requests.get(url)
+def cache_with_expiry(expiration_time):
+    def decorator(method):
+        @wraps(method)
+        def wrapper(*args, **kwargs):
+            url = kwargs.get('url')
+            if url:
+                key = f"cache:{url}"
+                cached_data = redis_client.get(key)
+                if cached_data:
+                    return cached_data.decode('utf-8')
+                else:
+                    response = method(*args, **kwargs)
+                    redis_client.setex(key, expiration_time, response)
+                    return response
+            else:
+                return method(*args, **kwargs)
+        return wrapper
+    return decorator
+
+@count_calls
+@cache_with_expiry(10)
+def get_page(url: str) -> str:
+    response = requests.get(f"http://slowwly.robertomurray.co.uk/delay/5000/url/{url}")
     return response.text
 
 if __name__ == "__main__":
-    url = "http://slowwly.robertomurray.co.uk/delay/1000/url/https://www.example.com"
-    
-    start_time = time.time()
-    html_content = get_page(url)
-
-    start_time = time.time()
-    html_content_cached = get_page_cached(url)
+    url = "example.com"
+    for i in range(5):
+        print(get_page(url))
+        time.sleep(2)  # Sleep for 2 seconds between each request
